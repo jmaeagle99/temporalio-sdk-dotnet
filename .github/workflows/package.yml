@@ -135,8 +135,6 @@ jobs:
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.x
 
       - name: Build package
         run: dotnet pack -c Release /p:BridgeLibraryRoot=${{ github.workspace }}/bridge-libraries
@@ -191,10 +189,6 @@ jobs:
       - name: Setup .NET (non-Alpine)
         uses: actions/setup-dotnet@v4
         if: ${{ matrix.os != 'alpine-latest' }}
-        with:
-          # Specific .NET version required because GitHub macos ARM image has
-          # bad pre-installed .NET version
-          dotnet-version: 10.x
 
       - name: Run smoke test (non-Windows)
         if: ${{ matrix.os != 'windows-latest' && matrix.os != 'windows-arm' }}
