@@ -52,20 +52,46 @@ namespace Temporalio.Bridge
             return val.Ref;
         }
 
+        public Interop.TemporalCoreByteArrayRef ByteArray(KeyValuePair<string, string> pair)
+        {
+            var val = ByteArrayRef.FromKeyValue(pair.Key, pair.Value);
+            byteArrayRefs.Add(val);
+            return val.Ref;
+        }
+
+        public Interop.TemporalCoreByteArrayRef ByteArray(KeyValuePair<string, byte[]> pair)
+        {
+            var val = ByteArrayRef.FromKeyValue(pair.Key, pair.Value);
+            byteArrayRefs.Add(val);
+            return val.Ref;
+        }
+
         /// <summary>
         /// Create a metadata byte array ref.
         /// </summary>
         /// <param name="metadata">Metadata to create from.</param>
         /// <returns>Created byte array ref.</returns>
-        public Interop.TemporalCoreByteArrayRef Metadata(IEnumerable<KeyValuePair<string, string>>? metadata)
+        public Interop.TemporalCoreByteArrayRefArray Metadata(IEnumerable<KeyValuePair<string, string>>? metadata)
         {
             if (metadata == null)
             {
                 return ByteArrayRef.Empty.Ref;
             }
-            var val = ByteArrayRef.FromMetadata(metadata);
-            byteArrayRefs.Add(val);
-            return val.Ref;
+            return ByteArrayArray(metadata);
+        }
+
+        /// <summary>
+        /// Create a metadata byte array ref.
+        /// </summary>
+        /// <param name="metadata">Metadata to create from.</param>
+        /// <returns>Created byte array ref.</returns>
+        public Interop.TemporalCoreByteArrayRefArray Metadata(IEnumerable<KeyValuePair<string, byte[]>>? metadata)
+        {
+            if (metadata == null)
+            {
+                return ByteArrayRef.Empty.Ref;
+            }
+            return ByteArrayArray(metadata);
         }
 
         /// <summary>
@@ -92,6 +118,42 @@ namespace Temporalio.Bridge
         public Interop.TemporalCoreByteArrayRefArray ByteArrayArray(IEnumerable<string> strings)
         {
             var arr = strings.Select(ByteArray).ToArray();
+            unsafe
+            {
+                return new()
+                {
+                    data = ArrayPointer(arr),
+                    size = (UIntPtr)arr.Length,
+                };
+            }
+        }
+
+        /// <summary>
+        /// Create an array of byte arrays from an collection of byte arrays.
+        /// </summary>
+        /// <param name="pairs">Strings.</param>
+        /// <returns>Created byte array array.</returns>
+        public Interop.TemporalCoreByteArrayRefArray ByteArrayArray(IEnumerable<KeyValuePair<string, string>> pairs)
+        {
+            var arr = pairs.Select(ByteArray).ToArray();
+            unsafe
+            {
+                return new()
+                {
+                    data = ArrayPointer(arr),
+                    size = (UIntPtr)arr.Length,
+                };
+            }
+        }
+
+        /// <summary>
+        /// Create an array of byte arrays from an collection of byte arrays.
+        /// </summary>
+        /// <param name="pairs">Strings.</param>
+        /// <returns>Created byte array array.</returns>
+        public Interop.TemporalCoreByteArrayRefArray ByteArrayArray(IEnumerable<KeyValuePair<string, byte[]>> pairs)
+        {
+            var arr = pairs.Select(ByteArray).ToArray();
             unsafe
             {
                 return new()

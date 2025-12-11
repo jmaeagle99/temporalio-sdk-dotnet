@@ -99,7 +99,7 @@ namespace Temporalio.Bridge
         /// </summary>
         /// <param name="metadata">Metadata to convert.</param>
         /// <returns>Converted byte array.</returns>
-        public static ByteArrayRef FromMetadata(IEnumerable<KeyValuePair<string, string>> metadata)
+        public static ByteArrayRef FromNewlineDelimited(IEnumerable<KeyValuePair<string, string>> metadata)
         {
             using (var stream = new MemoryStream())
             using (var writer = new StreamWriter(stream, StrictUTF8) { AutoFlush = true })
@@ -164,6 +164,48 @@ namespace Temporalio.Bridge
                 {
                     return Empty;
                 }
+
+                return new ByteArrayRef(stream.GetBuffer(), (int)stream.Length);
+            }
+        }
+
+        public static ByteArrayRef FromKeyValue(string key, string value)
+        {
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, StrictUTF8))
+            {
+                // If either have a newline, we error since it would make an invalid set
+                if (key.Contains("\n"))
+                {
+                    throw new ArgumentException("Metadata keys cannot have newlines");
+                }
+
+                writer.Write(key);
+                writer.Write('\n');
+                writer.Write(value);
+
+                writer.Flush();
+
+                return new ByteArrayRef(stream.GetBuffer(), (int)stream.Length);
+            }
+        }
+
+        public static ByteArrayRef FromKeyValue(string key, byte[] value)
+        {
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, StrictUTF8))
+            {
+                // If either have a newline, we error since it would make an invalid set
+                if (key.Contains("\n"))
+                {
+                    throw new ArgumentException("Metadata keys cannot have newlines");
+                }
+
+                writer.Write(key);
+                writer.Write('\n');
+                writer.Write(value);
+
+                writer.Flush();
 
                 return new ByteArrayRef(stream.GetBuffer(), (int)stream.Length);
             }

@@ -85,9 +85,7 @@ namespace Temporalio.Client
                 lock (rpcMetadataLock)
                 {
                     // Set on Rust side first to prevent errors from affecting field
-#pragma warning disable VSTHRD002 // We know it's completed
                     client.UpdateMetadata(value);
-#pragma warning restore VSTHRD002
                     // We copy this every time just to be safe
                     rpcMetadata = new List<KeyValuePair<string, string>>(value);
                 }
