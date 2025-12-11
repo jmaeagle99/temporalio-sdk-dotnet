@@ -77,6 +77,16 @@ namespace Temporalio.Client
         public IReadOnlyCollection<KeyValuePair<string, string>>? RpcMetadata { get; set; }
 
         /// <summary>
+        /// Gets or sets the gRPC metadata for all calls (i.e. the headers).
+        /// </summary>
+        /// <remarks>
+        /// Note, this is only the initial value, updates will not be applied. Use
+        /// <see cref="ITemporalConnection.RpcMetadata" /> property setter to update.
+        /// </remarks>
+        /// <seealso cref="RpcOptions.Metadata" />
+        public IReadOnlyCollection<KeyValuePair<string, byte[]>>? RpcBinaryMetadata { get; set; }
+
+        /// <summary>
         /// Gets or sets the API key for all calls.
         /// </summary>
         /// <remarks>
