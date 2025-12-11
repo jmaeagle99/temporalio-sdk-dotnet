@@ -98,7 +98,7 @@ namespace Temporalio.Bridge
         /// <returns>Created byte array ref.</returns>
         public Interop.TemporalCoreByteArrayRefArray Metadata(IEnumerable<KeyValuePair<string, string>>? metadata)
         {
-            if (metadata == null)
+            if (metadata == null || !metadata.Any())
             {
                 return EmptyByteArrayRefArray;
             }
@@ -112,7 +112,7 @@ namespace Temporalio.Bridge
         /// <returns>Created byte array ref.</returns>
         public Interop.TemporalCoreByteArrayRefArray Metadata(IEnumerable<KeyValuePair<string, byte[]>>? metadata)
         {
-            if (metadata == null)
+            if (metadata == null || !metadata.Any())
             {
                 return EmptyByteArrayRefArray;
             }

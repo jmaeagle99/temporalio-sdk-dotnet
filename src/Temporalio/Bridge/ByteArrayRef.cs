@@ -111,11 +111,17 @@ namespace Temporalio.Bridge
         public static ByteArrayRef FromKeyValuePair(KeyValuePair<string, byte[]> pair)
         {
             using (var stream = new MemoryStream())
-            using (var writer = new BinaryWriter(stream, StrictUTF8))
             {
-                writer.Write(pair.Key);
-                writer.Write('\n');
-                writer.Write(pair.Value);
+                using (var writer = new StreamWriter(stream, encoding: StrictUTF8, bufferSize: -1, leaveOpen: true) { AutoFlush = true })
+                {
+                    writer.Write(pair.Key);
+                    writer.Write('\n');
+                }
+
+                // StreamWriter does not support writing byte arrays.
+                // BinaryWriter inserts extra bytes when writing strings.
+                // Use stream directly to write the byte array.
+                stream.Write(pair.Value, 0, pair.Value.Length);
 
                 return new ByteArrayRef(stream.GetBuffer(), (int)stream.Length);
             }
