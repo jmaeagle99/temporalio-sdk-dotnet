@@ -15,11 +15,11 @@ namespace Temporalio.Bridge
             : base((IntPtr)ptr, true)
         {
             Runtime = runtime;
-            Ptr = ptr;
+            HandleRef = SafeHandleReference<ClientSafeHandle>.Owned(new ClientSafeHandle(ptr));
         }
 
         /// <inheritdoc />
-        public override unsafe bool IsInvalid => Ptr == null;
+        public override unsafe bool IsInvalid => HandleRef.Handle.IsInvalid;
 
         /// <summary>
         /// Gets the runtime associated with this client.
@@ -27,9 +27,9 @@ namespace Temporalio.Bridge
         internal Runtime Runtime { get; private init; }
 
         /// <summary>
-        /// Gets the pointer to the client.
+        /// Gets the safe handle for the client.
         /// </summary>
-        internal unsafe Interop.TemporalCoreClient* Ptr { get; private init; }
+        internal SafeHandleReference<ClientSafeHandle> HandleRef { get; private init; }
 
         /// <summary>
         /// Connect to Temporal.
@@ -80,7 +80,9 @@ namespace Temporalio.Bridge
             {
                 unsafe
                 {
-                    Interop.Methods.temporal_core_client_update_metadata(Ptr, scope.ByteArrayArray(metadata));
+                    Interop.Methods.temporal_core_client_update_metadata(
+                        scope.Pointer(HandleRef.Handle),
+                        scope.ByteArrayArray(metadata));
                 }
             }
         }
@@ -95,7 +97,9 @@ namespace Temporalio.Bridge
             {
                 unsafe
                 {
-                    Interop.Methods.temporal_core_client_update_binary_metadata(Ptr, scope.ByteArrayArray(metadata));
+                    Interop.Methods.temporal_core_client_update_binary_metadata(
+                        scope.Pointer(HandleRef.Handle),
+                        scope.ByteArrayArray(metadata));
                 }
             }
         }
@@ -110,7 +114,9 @@ namespace Temporalio.Bridge
             {
                 unsafe
                 {
-                    Interop.Methods.temporal_core_client_update_api_key(Ptr, scope.ByteArray(apiKey));
+                    Interop.Methods.temporal_core_client_update_api_key(
+                        scope.Pointer(HandleRef.Handle),
+                        scope.ByteArray(apiKey));
                 }
             }
         }
@@ -148,7 +154,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_client_rpc_call(
-                        Ptr,
+                        scope.Pointer(HandleRef.Handle),
                         scope.Pointer(
                             new Interop.TemporalCoreRpcCallOptions()
                             {
@@ -207,7 +213,7 @@ namespace Temporalio.Bridge
         /// <inheritdoc />
         protected override unsafe bool ReleaseHandle()
         {
-            Interop.Methods.temporal_core_client_free(Ptr);
+            this.HandleRef.Dispose();
             return true;
         }
     }

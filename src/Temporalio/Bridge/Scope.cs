@@ -202,6 +202,20 @@ namespace Temporalio.Bridge
         }
 
         /// <summary>
+        /// Create a <see cref="PinnedSafeHandle{T}"/> for an object.
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="value">Object to be pinned.</param>
+        /// <returns>Created <see cref="PinnedSafeHandle{T}"/>.</returns>
+        public PinnedSafeHandle<T> Pinned<T>(T value)
+            where T : unmanaged
+        {
+            PinnedSafeHandle<T> handle = new(value);
+            disposables.Add(handle);
+            return handle;
+        }
+
+        /// <summary>
         /// Create a stable pointer to an object.
         /// </summary>
         /// <typeparam name="T">Type of the object.</typeparam>
@@ -213,6 +227,21 @@ namespace Temporalio.Bridge
             var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
             gcHandles.Add(handle);
             return (T*)handle.AddrOfPinnedObject();
+        }
+
+        /// <summary>
+        /// Add a reference to a <see cref="UnmanagedSafeHandle{T}"/> and return its pointer.
+        /// </summary>
+        /// <typeparam name="T">Type of the handle.</typeparam>
+        /// <param name="handle">Handle to add a reference to.</param>
+        /// <returns>Pointer to the handle.</returns>
+        public unsafe T* Pointer<T>(UnmanagedSafeHandle<T> handle)
+            where T : unmanaged
+        {
+            disposables.Add(SafeHandleReference<UnmanagedSafeHandle<T>>.AddRef(handle));
+#pragma warning disable CS0618 // Type or member is obsolete
+            return handle.UnsafePtr;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         /// <summary>
