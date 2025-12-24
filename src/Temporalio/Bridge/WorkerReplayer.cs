@@ -25,7 +25,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     var replayerOrFail = Interop.Methods.temporal_core_worker_replayer_new(
-                        runtime.Ptr, scope.Pointer(options.ToInteropOptions(scope)));
+                        runtime.Ptr, scope.UnmanagedPointer(options.ToInteropOptions(scope)));
                     if (replayerOrFail.fail != null)
                     {
                         string failStr;
@@ -78,7 +78,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_replay_push(
-                        scope.Pointer(Worker.HandleRef.Handle),
+                        scope.UnmanagedPointer(Worker.HandleRef.Handle),
                         Ptr,
                         scope.ByteArray(workflowId),
                         scope.ByteArray(history.ToByteArray()));

@@ -207,7 +207,7 @@ namespace Temporalio.Bridge
         /// <typeparam name="T">Type of the object.</typeparam>
         /// <param name="value">Object to be pinned.</param>
         /// <returns>Created <see cref="PinnedSafeHandle{T}"/>.</returns>
-        public PinnedSafeHandle<T> Pinned<T>(T value)
+        public PinnedSafeHandle<T> PinnedHandle<T>(T value)
             where T : unmanaged
         {
             PinnedSafeHandle<T> handle = new(value);
@@ -216,12 +216,24 @@ namespace Temporalio.Bridge
         }
 
         /// <summary>
+        /// Get a unsafe void pointer for an object.
+        /// </summary>
+        /// <param name="value">Object to be pinned.</param>
+        /// <returns>The unsafe void pointer.</returns>
+        public unsafe void* ManagedPointer(object value)
+        {
+            var handle = GCHandle.Alloc(value, GCHandleType.Normal);
+            gcHandles.Add(handle);
+            return (void*)GCHandle.ToIntPtr(handle);
+        }
+
+        /// <summary>
         /// Create a stable pointer to an object.
         /// </summary>
         /// <typeparam name="T">Type of the object.</typeparam>
         /// <param name="value">Object to get create pointer for.</param>
         /// <returns>Created pointer.</returns>
-        public unsafe T* Pointer<T>(T value)
+        public unsafe T* UnmanagedPointer<T>(T value)
             where T : unmanaged
         {
             var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
@@ -235,7 +247,7 @@ namespace Temporalio.Bridge
         /// <typeparam name="T">Type of the handle.</typeparam>
         /// <param name="handle">Handle to add a reference to.</param>
         /// <returns>Pointer to the handle.</returns>
-        public unsafe T* Pointer<T>(UnmanagedSafeHandle<T> handle)
+        public unsafe T* UnmanagedPointer<T>(UnmanagedSafeHandle<T> handle)
             where T : unmanaged
         {
             disposables.Add(SafeHandleReference<UnmanagedSafeHandle<T>>.AddRef(handle));
@@ -272,7 +284,7 @@ namespace Temporalio.Bridge
             // seem unstable. So we're going to alloc a handle for it. We can't pin it though.
             var handle = GCHandle.Alloc(func);
             gcHandles.Add(handle);
-            return Marshal.GetFunctionPointerForDelegate(handle.Target!);
+            return Marshal.GetFunctionPointerForDelegate(func);
         }
 
         /// <inheritdoc />

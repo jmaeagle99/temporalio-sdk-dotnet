@@ -52,7 +52,7 @@ namespace Temporalio.Bridge
                         runtimeOptions.telemetry->logging->forward_to =
                             Marshal.GetFunctionPointerForDelegate(forwardLoggerCallback.Value.Target!);
                     }
-                    var res = Interop.Methods.temporal_core_runtime_new(scope.Pointer(runtimeOptions));
+                    var res = Interop.Methods.temporal_core_runtime_new(scope.UnmanagedPointer(runtimeOptions));
                     // If it failed, copy byte array, free runtime and byte array. Otherwise just
                     // return runtime.
                     if (res.fail != null)

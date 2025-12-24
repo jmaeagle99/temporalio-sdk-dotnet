@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,11 @@ namespace Temporalio.Bridge
     /// </summary>
     internal class Worker : IDisposable
     {
+        private readonly TemporalCoreWorkerCallback defaultCompletionCallack;
+        private readonly TemporalCoreWorkerPollCallback pollActivityTaskCallback;
+        private readonly TemporalCoreWorkerPollCallback pollNexusTaskCallback;
+        private readonly TemporalCoreWorkerPollCallback pollWorkflowActivationCallback;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Worker"/> class.
         /// </summary>
@@ -38,7 +44,18 @@ namespace Temporalio.Bridge
                     Methods.temporal_core_worker_new(
                         client.Runtime,
                         client.HandleRef.Handle,
-                        scope.Pinned(options.ToInteropOptions(scope, namespace_, loggerFactory, clientPlugins))));
+                        scope.PinnedHandle(options.ToInteropOptions(scope, namespace_, loggerFactory, clientPlugins))));
+            }
+
+            unsafe
+            {
+                defaultCompletionCallack = new TemporalCoreWorkerCallback(CompletionCallback);
+                pollActivityTaskCallback = CreatePollCompletionCallback(
+                    (byteArray) => byteArray?.ToProto(Api.ActivityTask.ActivityTask.Parser));
+                pollNexusTaskCallback = CreatePollCompletionCallback(
+                    (byteArray) => byteArray?.ToProto(Api.Nexus.NexusTask.Parser));
+                pollWorkflowActivationCallback = CreatePollCompletionCallback(
+                    (byteArray) => byteArray?.ToProto(Api.WorkflowActivation.WorkflowActivation.Parser));
             }
         }
 
@@ -49,9 +66,8 @@ namespace Temporalio.Bridge
         /// <param name="runtime">Runtime.</param>
         /// <param name="handle">Pointer.</param>
         internal unsafe Worker(Runtime runtime, WorkerSafeHandle handle)
+            : this(runtime, SafeHandleReference<WorkerSafeHandle>.AddRef(handle))
         {
-            Runtime = runtime;
-            HandleRef = SafeHandleReference<WorkerSafeHandle>.AddRef(handle);
         }
 
         /// <summary>
@@ -60,9 +76,25 @@ namespace Temporalio.Bridge
         /// </summary>
         /// <param name="other">Other worker to reference.</param>
         internal Worker(Worker other)
+            : this(other.Runtime, SafeHandleReference<WorkerSafeHandle>.AddRef(other.HandleRef.Handle))
         {
-            Runtime = other.Runtime;
-            HandleRef = SafeHandleReference<WorkerSafeHandle>.AddRef(other.HandleRef.Handle);
+        }
+
+        private Worker(Runtime runtime, SafeHandleReference<WorkerSafeHandle> handleRef)
+        {
+            Runtime = runtime;
+            HandleRef = handleRef;
+
+            unsafe
+            {
+                defaultCompletionCallack = new TemporalCoreWorkerCallback(CompletionCallback);
+                pollActivityTaskCallback = CreatePollCompletionCallback(
+                    (byteArray) => byteArray?.ToProto(Api.ActivityTask.ActivityTask.Parser));
+                pollNexusTaskCallback = CreatePollCompletionCallback(
+                    (byteArray) => byteArray?.ToProto(Api.Nexus.NexusTask.Parser));
+                pollWorkflowActivationCallback = CreatePollCompletionCallback(
+                    (byteArray) => byteArray?.ToProto(Api.WorkflowActivation.WorkflowActivation.Parser));
+            }
         }
 
         /// <summary>
@@ -88,21 +120,9 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_validate(
-                        scope.Pointer(HandleRef.Handle),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerCallback>(
-                            (userData, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(true);
-                                }
-                            }));
+                        scope.UnmanagedPointer(HandleRef.Handle),
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(defaultCompletionCallack));
                 }
                 await completion.Task.ConfigureAwait(false);
             }
@@ -119,8 +139,8 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_replace_client(
-                        scope.Pointer(HandleRef.Handle),
-                        scope.Pointer(client.HandleRef.Handle));
+                        scope.UnmanagedPointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(client.HandleRef.Handle));
                 }
             }
         }
@@ -134,33 +154,16 @@ namespace Temporalio.Bridge
         {
             using (var scope = new Scope())
             {
-                var completion = new TaskCompletionSource<ByteArray?>(
+                var completion = new TaskCompletionSource<Api.WorkflowActivation.WorkflowActivation?>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_poll_workflow_activation(
-                        scope.Pointer(HandleRef.Handle),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerPollCallback>(
-                            (userData, success, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else if (success == null)
-                                {
-                                    completion.TrySetResult(null);
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(new ByteArray(Runtime, success));
-                                }
-                            }));
+                        scope.UnmanagedPointer(HandleRef.Handle),
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(pollWorkflowActivationCallback));
                 }
-                return (await completion.Task.ConfigureAwait(false))?.ToProto(
-                    Api.WorkflowActivation.WorkflowActivation.Parser);
+                return await completion.Task.ConfigureAwait(false);
             }
         }
 
@@ -173,33 +176,16 @@ namespace Temporalio.Bridge
         {
             using (var scope = new Scope())
             {
-                var completion = new TaskCompletionSource<ByteArray?>(
+                var completion = new TaskCompletionSource<Api.ActivityTask.ActivityTask?>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_poll_activity_task(
-                        scope.Pointer(HandleRef.Handle),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerPollCallback>(
-                            (userData, success, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else if (success == null)
-                                {
-                                    completion.TrySetResult(null);
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(new ByteArray(Runtime, success));
-                                }
-                            }));
+                        scope.UnmanagedPointer(HandleRef.Handle),
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(pollActivityTaskCallback));
                 }
-                return (await completion.Task.ConfigureAwait(false))?.ToProto(
-                    Api.ActivityTask.ActivityTask.Parser);
+                return await completion.Task.ConfigureAwait(false);
             }
         }
 
@@ -212,33 +198,16 @@ namespace Temporalio.Bridge
         {
             using (var scope = new Scope())
             {
-                var completion = new TaskCompletionSource<ByteArray?>(
+                var completion = new TaskCompletionSource<Api.Nexus.NexusTask?>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_poll_nexus_task(
-                        scope.Pointer(HandleRef.Handle),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerPollCallback>(
-                            (userData, success, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else if (success == null)
-                                {
-                                    completion.TrySetResult(null);
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(new ByteArray(Runtime, success));
-                                }
-                            }));
+                        scope.UnmanagedPointer(HandleRef.Handle),
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(pollNexusTaskCallback));
                 }
-                return (await completion.Task.ConfigureAwait(false))?.ToProto(
-                    Api.Nexus.NexusTask.Parser);
+                return await completion.Task.ConfigureAwait(false);
             }
         }
 
@@ -257,22 +226,10 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_complete_workflow_activation(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArray(comp.ToByteArray()),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerCallback>(
-                            (userData, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(true);
-                                }
-                            }));
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(defaultCompletionCallack));
                 }
                 await completion.Task.ConfigureAwait(false);
             }
@@ -292,22 +249,10 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_complete_activity_task(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArray(comp.ToByteArray()),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerCallback>(
-                            (userData, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(true);
-                                }
-                            }));
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(defaultCompletionCallack));
                 }
                 await completion.Task.ConfigureAwait(false);
             }
@@ -327,22 +272,10 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_complete_nexus_task(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArray(comp.ToByteArray()),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerCallback>(
-                            (userData, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(true);
-                                }
-                            }));
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(defaultCompletionCallack));
                 }
                 await completion.Task.ConfigureAwait(false);
             }
@@ -359,7 +292,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     var fail = Interop.Methods.temporal_core_worker_record_activity_heartbeat(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArray(heartbeat.ToByteArray()));
                     if (fail != null)
                     {
@@ -385,7 +318,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_request_workflow_eviction(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArray(runId));
                 }
             }
@@ -400,7 +333,8 @@ namespace Temporalio.Bridge
             {
                 unsafe
                 {
-                    Interop.Methods.temporal_core_worker_initiate_shutdown(scope.Pointer(HandleRef.Handle));
+                    Interop.Methods.temporal_core_worker_initiate_shutdown(
+                        scope.UnmanagedPointer(HandleRef.Handle));
                 }
             }
         }
@@ -419,21 +353,9 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_worker_finalize_shutdown(
-                        scope.Pointer(HandleRef.Handle),
-                        null,
-                        scope.FunctionPointer<Interop.TemporalCoreWorkerCallback>(
-                            (userData, fail) =>
-                            {
-                                if (fail != null)
-                                {
-                                    completion.TrySetException(new InvalidOperationException(
-                                        new ByteArray(Runtime, fail).ToUTF8()));
-                                }
-                                else
-                                {
-                                    completion.TrySetResult(true);
-                                }
-                            }));
+                        scope.UnmanagedPointer(HandleRef.Handle),
+                        scope.ManagedPointer(completion),
+                        scope.FunctionPointer(defaultCompletionCallack));
                 }
                 await completion.Task.ConfigureAwait(false);
             }
@@ -443,6 +365,64 @@ namespace Temporalio.Bridge
         public void Dispose()
         {
             this.HandleRef.Dispose();
+        }
+
+        private unsafe TemporalCoreWorkerPollCallback CreatePollCompletionCallback<T>(Func<ByteArray?, T?> deserialize)
+        {
+            return (userData, success, fail) =>
+            {
+                using ByteArray failByteArray = new(Runtime, fail);
+                using ByteArray successByteArray = new(Runtime, success);
+
+                if (userData == null)
+                {
+                    return;
+                }
+
+                TaskCompletionSource<T?>? tcs = GCHandle.FromIntPtr((IntPtr)userData).Target as TaskCompletionSource<T?>;
+                if (tcs == null)
+                {
+                    return;
+                }
+
+                if (fail != null)
+                {
+                    tcs.TrySetException(new InvalidOperationException(failByteArray.ToUTF8()));
+                }
+                else if (success != null)
+                {
+                    tcs.TrySetResult(deserialize(successByteArray));
+                }
+                else
+                {
+                    tcs.TrySetResult(deserialize(null));
+                }
+            };
+        }
+
+        private unsafe void CompletionCallback(void* userData, TemporalCoreByteArray* fail)
+        {
+            using ByteArray failByteArray = new(Runtime, fail);
+
+            if (userData == null)
+            {
+                return;
+            }
+
+            TaskCompletionSource<bool>? tcs = GCHandle.FromIntPtr((IntPtr)userData).Target as TaskCompletionSource<bool>;
+            if (tcs == null)
+            {
+                return;
+            }
+
+            if (fail != null)
+            {
+                tcs.TrySetException(new InvalidOperationException(failByteArray.ToUTF8()));
+            }
+            else
+            {
+                tcs.TrySetResult(true);
+            }
         }
     }
 }

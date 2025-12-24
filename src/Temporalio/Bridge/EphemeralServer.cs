@@ -57,7 +57,7 @@ namespace Temporalio.Bridge
                 {
                     Interop.Methods.temporal_core_ephemeral_server_start_dev_server(
                         runtime.Ptr,
-                        scope.Pointer(options.ToInteropOptions(scope)),
+                        scope.UnmanagedPointer(options.ToInteropOptions(scope)),
                         null,
                         CallbackForStart(runtime, scope, false, completion));
                 }
@@ -83,7 +83,7 @@ namespace Temporalio.Bridge
                 {
                     Interop.Methods.temporal_core_ephemeral_server_start_test_server(
                         runtime.Ptr,
-                        scope.Pointer(options.ToInteropOptions(scope)),
+                        scope.UnmanagedPointer(options.ToInteropOptions(scope)),
                         null,
                         CallbackForStart(runtime, scope, true, completion));
                 }

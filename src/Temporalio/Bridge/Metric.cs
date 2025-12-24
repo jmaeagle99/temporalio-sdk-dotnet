@@ -37,7 +37,7 @@ namespace Temporalio.Bridge
                         unit = scope.ByteArray(unit ?? string.Empty),
                         kind = kind,
                     };
-                    ptr = Interop.Methods.temporal_core_metric_new(meter.Ptr, scope.Pointer(options));
+                    ptr = Interop.Methods.temporal_core_metric_new(meter.Ptr, scope.UnmanagedPointer(options));
                     SetHandle((IntPtr)ptr);
                 }
             }

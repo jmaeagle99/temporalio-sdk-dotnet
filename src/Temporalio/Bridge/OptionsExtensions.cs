@@ -32,7 +32,7 @@ namespace Temporalio.Bridge
         {
             return new Interop.TemporalCoreRuntimeOptions()
             {
-                telemetry = scope.Pointer(options.Telemetry.ToInteropOptions(scope)),
+                telemetry = scope.UnmanagedPointer(options.Telemetry.ToInteropOptions(scope)),
                 worker_heartbeat_interval_millis =
                     (ulong)(options.WorkerHeartbeatInterval?.TotalMilliseconds ?? 0),
             };
@@ -53,11 +53,11 @@ namespace Temporalio.Bridge
                 logging =
                     options.Logging == null
                         ? null
-                        : scope.Pointer(options.Logging.ToInteropOptions(scope)),
+                        : scope.UnmanagedPointer(options.Logging.ToInteropOptions(scope)),
                 metrics =
                     options.Metrics == null
                         ? null
-                        : scope.Pointer(options.Metrics.ToInteropOptions(scope)),
+                        : scope.UnmanagedPointer(options.Metrics.ToInteropOptions(scope)),
             };
         }
 
@@ -186,7 +186,7 @@ namespace Temporalio.Bridge
                 {
                     throw new ArgumentException("Prometheus options must have bind address");
                 }
-                prometheus = scope.Pointer(options.Prometheus.ToInteropOptions(scope));
+                prometheus = scope.UnmanagedPointer(options.Prometheus.ToInteropOptions(scope));
             }
             else if (options.OpenTelemetry != null)
             {
@@ -195,7 +195,7 @@ namespace Temporalio.Bridge
                     throw new ArgumentException(
                         "Cannot have OpenTelemetry and CustomMetricMeter metrics options");
                 }
-                openTelemetry = scope.Pointer(options.OpenTelemetry.ToInteropOptions(scope));
+                openTelemetry = scope.UnmanagedPointer(options.OpenTelemetry.ToInteropOptions(scope));
             }
             else if (options.CustomMetricMeter != null)
             {
@@ -266,19 +266,19 @@ namespace Temporalio.Bridge
                 api_key = scope.ByteArray(options.ApiKey),
                 identity = scope.ByteArray(options.Identity),
                 tls_options =
-                    tls == null ? null : scope.Pointer(tls.ToInteropOptions(scope)),
+                    tls == null ? null : scope.UnmanagedPointer(tls.ToInteropOptions(scope)),
                 retry_options =
                     options.RpcRetry == null
                         ? null
-                        : scope.Pointer(options.RpcRetry.ToInteropOptions()),
+                        : scope.UnmanagedPointer(options.RpcRetry.ToInteropOptions()),
                 keep_alive_options =
                     options.KeepAlive == null
                         ? null
-                        : scope.Pointer(options.KeepAlive.ToInteropOptions()),
+                        : scope.UnmanagedPointer(options.KeepAlive.ToInteropOptions()),
                 http_connect_proxy_options =
                     options.HttpConnectProxy == null
                         ? null
-                        : scope.Pointer(options.HttpConnectProxy.ToInteropOptions(scope)),
+                        : scope.UnmanagedPointer(options.HttpConnectProxy.ToInteropOptions(scope)),
             };
         }
 
@@ -393,7 +393,7 @@ namespace Temporalio.Bridge
 
             return new Interop.TemporalCoreDevServerOptions()
             {
-                test_server = scope.Pointer(
+                test_server = scope.UnmanagedPointer(
                     new Interop.TemporalCoreTestServerOptions()
                     {
                         existing_path = scope.ByteArray(options.DevServerOptions.ExistingPath),
@@ -809,7 +809,7 @@ namespace Temporalio.Bridge
                 };
                 unsafe
                 {
-                    return new Interop.TemporalCorePollerBehavior { simple_maximum = scope.Pointer(max), };
+                    return new Interop.TemporalCorePollerBehavior { simple_maximum = scope.UnmanagedPointer(max), };
                 }
             }
             else if (pollerBehavior is PollerBehavior.Autoscaling autoscaling)
@@ -822,7 +822,7 @@ namespace Temporalio.Bridge
                 };
                 unsafe
                 {
-                    return new Interop.TemporalCorePollerBehavior { autoscaling = scope.Pointer(autoscale), };
+                    return new Interop.TemporalCorePollerBehavior { autoscaling = scope.UnmanagedPointer(autoscale), };
                 }
             }
             else

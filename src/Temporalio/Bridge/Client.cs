@@ -49,7 +49,7 @@ namespace Temporalio.Bridge
                 {
                     Interop.Methods.temporal_core_client_connect(
                         runtime.Ptr,
-                        scope.Pointer(options.ToInteropOptions(scope)),
+                        scope.UnmanagedPointer(options.ToInteropOptions(scope)),
                         null,
                         scope.FunctionPointer<Interop.TemporalCoreClientConnectCallback>(
                             (userData, success, fail) =>
@@ -81,7 +81,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_client_update_metadata(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArrayArray(metadata));
                 }
             }
@@ -98,7 +98,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_client_update_binary_metadata(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArrayArray(metadata));
                 }
             }
@@ -115,7 +115,7 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_client_update_api_key(
-                        scope.Pointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(HandleRef.Handle),
                         scope.ByteArray(apiKey));
                 }
             }
@@ -154,8 +154,8 @@ namespace Temporalio.Bridge
                 unsafe
                 {
                     Interop.Methods.temporal_core_client_rpc_call(
-                        scope.Pointer(HandleRef.Handle),
-                        scope.Pointer(
+                        scope.UnmanagedPointer(HandleRef.Handle),
+                        scope.UnmanagedPointer(
                             new Interop.TemporalCoreRpcCallOptions()
                             {
                                 service = service,
