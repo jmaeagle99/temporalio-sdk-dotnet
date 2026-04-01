@@ -54,6 +54,19 @@ namespace Temporalio.Runtime
             where T : struct;
 
         /// <summary>
+        /// Create a metric up-down counter.
+        /// </summary>
+        /// <typeparam name="T">The type of up-down counter value. Currently this is always
+        /// <c>long</c>, but the types can change in the future.</typeparam>
+        /// <param name="name">Name for the metric.</param>
+        /// <param name="unit">Unit for the metric if any.</param>
+        /// <param name="description">Description for the metric if any.</param>
+        /// <returns>Up-down counter to be called with updates.</returns>
+        ICustomMetricUpDownCounter<T> CreateUpDownCounter<T>(
+            string name, string? unit, string? description)
+            where T : struct;
+
+        /// <summary>
         /// Create a new tag set. This created value will be passed to different metric update
         /// calls at update time.
         /// </summary>

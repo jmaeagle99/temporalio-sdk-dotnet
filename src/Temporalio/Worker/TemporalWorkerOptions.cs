@@ -363,6 +363,14 @@ namespace Temporalio.Worker
         public IReadOnlyCollection<ITemporalWorkerPlugin>? Plugins { get; set; }
 
         /// <summary>
+        /// Gets or sets the external storage drivers reported in worker heartbeat.
+        /// </summary>
+        /// <remarks>
+        /// WARNING: This API is experimental and may change in the future.
+        /// </remarks>
+        public IReadOnlyCollection<ITemporalWorkerStorageDriver>? StorageDrivers { get; set; }
+
+        /// <summary>
         /// Gets the TEMPORAL_DEBUG environment variable.
         /// </summary>
         internal static string? DebugModeEnvironmentVariable { get; } = Environment.GetEnvironmentVariable("TEMPORAL_DEBUG");

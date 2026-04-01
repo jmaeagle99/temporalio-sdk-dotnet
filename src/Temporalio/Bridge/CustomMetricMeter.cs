@@ -102,6 +102,9 @@ namespace Temporalio.Bridge
                 case Interop.TemporalCoreMetricKind.GaugeFloat:
                     metric = GCHandle.Alloc(meter.CreateGauge<double>(nameStr, unitStr, descStr));
                     break;
+                case Interop.TemporalCoreMetricKind.UpDownCounterInteger:
+                    metric = GCHandle.Alloc(meter.CreateUpDownCounter<long>(nameStr, unitStr, descStr));
+                    break;
                 default:
                     throw new InvalidOperationException($"Unknown kind: {kind}");
             }
@@ -115,17 +118,23 @@ namespace Temporalio.Bridge
         {
             var metricObject = (Temporalio.Runtime.ICustomMetric<long>)GCHandle.FromIntPtr(new(metric)).Target!;
             var tags = GCHandle.FromIntPtr(new(attributes)).Target!;
-            var metricValue = value > long.MaxValue ? long.MaxValue : unchecked((long)value);
             switch (metricObject)
             {
                 case Temporalio.Runtime.ICustomMetricCounter<long> counter:
-                    counter.Add(metricValue, tags);
+                    var counterValue = value > long.MaxValue ? long.MaxValue : unchecked((long)value);
+                    counter.Add(counterValue, tags);
                     break;
                 case Temporalio.Runtime.ICustomMetricHistogram<long> histogram:
-                    histogram.Record(metricValue, tags);
+                    var histValue = value > long.MaxValue ? long.MaxValue : unchecked((long)value);
+                    histogram.Record(histValue, tags);
                     break;
                 case Temporalio.Runtime.ICustomMetricGauge<long> gauge:
-                    gauge.Set(metricValue, tags);
+                    var gaugeValue = value > long.MaxValue ? long.MaxValue : unchecked((long)value);
+                    gauge.Set(gaugeValue, tags);
+                    break;
+                case Temporalio.Runtime.ICustomMetricUpDownCounter<long> upDownCounter:
+                    // Core passes i64 cast to u64 via the integer callback for up-down counters
+                    upDownCounter.Add(unchecked((long)value), tags);
                     break;
             }
         }

@@ -60,6 +60,19 @@ namespace Temporalio.Bridge
         }
 
         /// <summary>
+        /// Record a signed integer value for the metric (used for up-down counters).
+        /// </summary>
+        /// <param name="value">Value to record.</param>
+        /// <param name="attributes">Attributes to set.</param>
+        public void RecordIntegerSigned(long value, MetricAttributes attributes)
+        {
+            unsafe
+            {
+                Interop.Methods.temporal_core_metric_record_integer_signed(ptr, value, attributes.Ptr);
+            }
+        }
+
+        /// <summary>
         /// Record a value for the metric.
         /// </summary>
         /// <param name="value">Value to record.</param>

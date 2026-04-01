@@ -591,6 +591,10 @@ namespace Temporalio.Bridge
                 .Concat(clientPluginNames)
                 .Distinct()
                 .ToArray();
+            var storageDriverNames = options.StorageDrivers?
+                .Select(d => d.Name)
+                .Distinct()
+                .ToArray() ?? Array.Empty<string>();
             return new()
             {
                 namespace_ = scope.ByteArray(namespace_),
@@ -619,6 +623,7 @@ namespace Temporalio.Bridge
                 nondeterminism_as_workflow_fail_for_types = scope.ByteArrayArray(
                     AllNonDeterminismFailureTypeWorkflows(options.Workflows)),
                 plugins = scope.ByteArrayArray(pluginNames),
+                storage_drivers = scope.ByteArrayArray(storageDriverNames),
             };
         }
 
@@ -679,6 +684,7 @@ namespace Temporalio.Bridge
                 nondeterminism_as_workflow_fail_for_types = scope.ByteArrayArray(
                     AllNonDeterminismFailureTypeWorkflows(options.Workflows)),
                 plugins = scope.ByteArrayArray(pluginNames),
+                storage_drivers = scope.ByteArrayArray(Array.Empty<string>()),
             };
         }
 
