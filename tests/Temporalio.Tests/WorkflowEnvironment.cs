@@ -95,6 +95,9 @@ public class WorkflowEnvironment : IAsyncLifetime
                         // Enable Nexus cancellation types
                         "--dynamic-config-value",
                         "component.nexusoperations.recordCancelRequestCompletionEvents=true",
+                        // Enable eager cancellation of pollers on shutdown
+                        "--dynamic-config-value",
+                        "frontend.enableCancelWorkerPollsOnShutdown=true",
                     },
                 },
             });
