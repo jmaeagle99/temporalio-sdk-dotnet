@@ -16,9 +16,7 @@ jobs:
         os:
           [
             ubuntu-latest,
-            ubuntu-arm,
             alpine-latest,
-            alpine-arm,
             macos-intel,
             macos-arm,
             windows-latest,
@@ -31,13 +29,6 @@ jobs:
             # We use the Python manylinux image for glibc compatibility
             container: quay.io/pypa/manylinux2014_x86_64
             protobuf-url: https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
-          - os: ubuntu-arm
-            out-file: libtemporalio_sdk_core_c_bridge.so
-            out-prefix: linux-arm64
-            runsOn: ubuntu-24.04-arm64-2-core
-            # We use the Python manylinux image for glibc compatibility
-            container: quay.io/pypa/manylinux2014_aarch64
-            protobuf-url: https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-aarch_64.zip
           - os: alpine-latest
             out-file: libtemporalio_sdk_core_c_bridge.so
             out-prefix: linux-musl-x64
@@ -45,13 +36,6 @@ jobs:
             container: mcr.microsoft.com/dotnet/sdk:10.0-alpine
             protobuf-url: https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
             runsOn: ubuntu-latest
-          - os: alpine-arm
-            out-file: libtemporalio_sdk_core_c_bridge.so
-            out-prefix: linux-musl-arm64
-            # Need Alpine container since GH runner doesn't have one
-            container: mcr.microsoft.com/dotnet/sdk:10.0-alpine
-            protobuf-url: https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-aarch_64.zip
-            runsOn: ubuntu-24.04-arm64-2-core
           - os: macos-intel
             out-file: libtemporalio_sdk_core_c_bridge.dylib
             out-prefix: osx-x64
@@ -183,22 +167,15 @@ jobs:
         os:
           [
             ubuntu-latest,
-            ubuntu-arm,
             alpine-latest,
-            alpine-arm,
             macos-intel,
             macos-arm,
             windows-latest,
             windows-arm,
           ]
         include:
-          - os: ubuntu-arm
-            runsOn: ubuntu-24.04-arm64-2-core
           - os: alpine-latest
             runsOn: ubuntu-latest
-          - os: alpine-arm
-            # Run in Docker manually to avoid JS action limitations on ARM64
-            runsOn: ubuntu-24.04-arm64-2-core
           - os: macos-intel
             runsOn: macos-15-intel
           - os: macos-arm

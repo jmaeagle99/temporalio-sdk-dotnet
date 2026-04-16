@@ -88,14 +88,8 @@
       <Content Include="$(BridgeLibraryRoot)/linux-x64-bridge/libtemporalio_sdk_core_c_bridge.so">
         <PackagePath>runtimes/linux-x64/native/libtemporalio_sdk_core_c_bridge.so</PackagePath>
       </Content>
-      <Content Include="$(BridgeLibraryRoot)/linux-arm64-bridge/libtemporalio_sdk_core_c_bridge.so">
-        <PackagePath>runtimes/linux-arm64/native/libtemporalio_sdk_core_c_bridge.so</PackagePath>
-      </Content>
       <Content Include="$(BridgeLibraryRoot)/linux-musl-x64-bridge/libtemporalio_sdk_core_c_bridge.so">
         <PackagePath>runtimes/linux-musl-x64/native/libtemporalio_sdk_core_c_bridge.so</PackagePath>
-      </Content>
-      <Content Include="$(BridgeLibraryRoot)/linux-musl-arm64-bridge/libtemporalio_sdk_core_c_bridge.so">
-        <PackagePath>runtimes/linux-musl-arm64/native/libtemporalio_sdk_core_c_bridge.so</PackagePath>
       </Content>
       <Content Include="$(BridgeLibraryRoot)/osx-x64-bridge/libtemporalio_sdk_core_c_bridge.dylib">
         <PackagePath>runtimes/osx-x64/native/libtemporalio_sdk_core_c_bridge.dylib</PackagePath>
